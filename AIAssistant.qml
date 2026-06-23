@@ -22,7 +22,6 @@ Item {
             // This avoids stale popup/dropdown internals when reopened.
             showSettingsMenu = false
             showOverflowMenu = false
-            showNewChatConfirm = false
         }
     }
 
@@ -34,7 +33,7 @@ Item {
     Connections {
         target: root.hostWindow
         function onVisibleChanged() {
-            if (root.hostWindow && root.hostWindow.visible && !showNewChatConfirm)
+            if (root.hostWindow && root.hostWindow.visible)
                 Qt.callLater(() => composer.forceActiveFocus())
         }
     }
@@ -42,7 +41,6 @@ Item {
     required property var aiService
     property bool showSettingsMenu: false
     property bool showOverflowMenu: false
-    property bool showNewChatConfirm: false
     property string transientHint: ""
     property real nowMs: Date.now()
     readonly property real panelTransparency: SettingsData.popupTransparency
@@ -72,11 +70,6 @@ Item {
     function startNewChat() {
         if (aiService.isStreaming ?? false) {
             showTemporaryHint(I18n.tr("Stop current response first."))
-            return
-        }
-
-        if ((aiService.messageCount ?? 0) > 0) {
-            showNewChatConfirm = true
             return
         }
 
@@ -577,82 +570,4 @@ Item {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        visible: showNewChatConfirm
-        focus: showNewChatConfirm
-        onVisibleChanged: if (visible) forceActiveFocus()
-        onClicked: showNewChatConfirm = false
-
-        Keys.enabled: showNewChatConfirm
-        Keys.onPressed: event => {
-            if (event.key === Qt.Key_Escape) {
-                showNewChatConfirm = false
-                event.accepted = true
-            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                aiService.clearHistory(true)
-                showNewChatConfirm = false
-                event.accepted = true
-            }
-        }
-
-        Rectangle {
-            width: Math.min(parent.width * 0.88, 360)
-            height: confirmColumn.height + Theme.spacingL * 2
-            anchors.centerIn: parent
-            radius: Theme.cornerRadius
-            color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
-            border.width: 1
-            border.color: Theme.outlineMedium
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                }
-            }
-
-            Column {
-                id: confirmColumn
-                width: parent.width - Theme.spacingL * 2
-                anchors.centerIn: parent
-                spacing: Theme.spacingM
-
-                StyledText {
-                    text: I18n.tr("Start a new chat?")
-                    color: Theme.surfaceText
-                    font.pixelSize: Theme.fontSizeLarge
-                    font.weight: Font.Medium
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                }
-
-                StyledText {
-                    text: I18n.tr("This clears the current chat history.")
-                    color: Theme.surfaceTextMedium
-                    font.pixelSize: Theme.fontSizeSmall
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                }
-
-                Row {
-                    spacing: Theme.spacingS
-                    anchors.right: parent.right
-
-                    DankButton {
-                        text: I18n.tr("Cancel")
-                        onClicked: showNewChatConfirm = false
-                    }
-
-                    DankButton {
-                        text: I18n.tr("New chat")
-                        iconName: "keyboard_return"
-                        onClicked: {
-                            aiService.clearHistory(true)
-                            showNewChatConfirm = false
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
