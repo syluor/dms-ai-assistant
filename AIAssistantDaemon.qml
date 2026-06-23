@@ -36,9 +36,9 @@ Item {
                 id: slideout
                 required property var modelData
                 title: "AI Assistant"
-                slideoutWidth: 480
+                slideoutWidth: 380
                 expandable: true
-                expandedWidthValue: 960
+                expandedWidthValue: 760
 
                 content: AIAssistant {
                     aiService: aiLogic
