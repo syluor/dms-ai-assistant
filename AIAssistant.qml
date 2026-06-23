@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import QtQuick.Window
 import Quickshell
 import qs.Common
 import qs.Services
@@ -25,6 +26,19 @@ Item {
         }
     }
 
+    // The plugin root lives inside a Loader, so it is always visible and its own
+    // onVisibleChanged never fires when the slideout opens/closes. Instead we
+    // watch the host PanelWindow's visibility and refocus the composer each time
+    // the panel is shown — so the user can type (and use Ctrl+N / Enter) right
+    // away after opening the panel via keybind or IPC, without a manual click.
+    Connections {
+        target: root.hostWindow
+        function onVisibleChanged() {
+            if (root.hostWindow && root.hostWindow.visible && !showNewChatConfirm)
+                Qt.callLater(() => composer.forceActiveFocus())
+        }
+    }
+
     required property var aiService
     property bool showSettingsMenu: false
     property bool showOverflowMenu: false
@@ -32,6 +46,9 @@ Item {
     property string transientHint: ""
     property real nowMs: Date.now()
     readonly property real panelTransparency: SettingsData.popupTransparency
+    // Host PanelWindow. Window.window is an Item-only attached property, so it
+    // must be read here on the root Item — not from a Connections object.
+    readonly property var hostWindow: Window.window
     readonly property bool hasApiKey: !!(aiService && aiService.resolveApiKey && aiService.resolveApiKey().length > 0)
     readonly property bool hasMessages: (aiService.messageCount ?? 0) > 0
     readonly property int streamElapsedSeconds: (aiService.isStreaming && (aiService.streamStartedAtMs ?? 0) > 0)
