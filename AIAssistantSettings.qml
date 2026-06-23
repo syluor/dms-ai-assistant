@@ -32,6 +32,7 @@ Item {
     property bool inceptionReasoningSummary: true
     property bool inceptionReasoningSummaryWait: false
     property bool geminiWebSearch: false
+    property string systemPrompt: ""
 
     function save(key, value) {
         PluginService.savePluginData(pluginId, key, value)
@@ -124,7 +125,8 @@ Item {
             apiKeyEnvVar: String(p.apiKeyEnvVar || "").trim(),
             temperature: (typeof p.temperature === "number") ? p.temperature : d.temperature,
             maxTokens: (typeof p.maxTokens === "number") ? p.maxTokens : d.maxTokens,
-            timeout: (typeof p.timeout === "number") ? p.timeout : d.timeout
+            timeout: (typeof p.timeout === "number") ? p.timeout : d.timeout,
+            systemPrompt: String(p.systemPrompt || "").trim()
         }
         if (id === "inception") {
             const efforts = ["instant", "low", "medium", "high"]
@@ -174,6 +176,7 @@ Item {
         apiKeyEnvVar = active.apiKeyEnvVar
         temperature = active.temperature
         maxTokens = active.maxTokens
+        systemPrompt = active.systemPrompt
         if (provider === "inception") {
             inceptionReasoningEffort = active.inceptionReasoningEffort || "medium"
             inceptionReasoningSummary = active.inceptionReasoningSummary !== false
@@ -206,7 +209,7 @@ Item {
         saveProviders(nextProviders)
 
         // Keep active-provider legacy keys in sync for compatibility and easier debugging.
-        if (["baseUrl", "model", "apiKey", "saveApiKey", "apiKeyEnvVar", "temperature", "maxTokens", "geminiWebSearch"].includes(key)) {
+        if (["baseUrl", "model", "apiKey", "saveApiKey", "apiKeyEnvVar", "temperature", "maxTokens", "geminiWebSearch", "systemPrompt"].includes(key)) {
             save(key, nextProviders[provider][key])
         }
     }
@@ -772,6 +775,115 @@ Item {
                                 value: root.maxTokens
                                 showValue: false
                                 onSliderValueChanged: newValue => saveActiveField("maxTokens", newValue)
+                            }
+                        }
+                    }
+
+                    // System Prompt Card
+                    Rectangle {
+                        width: parent.width
+                        height: sysPromptContent.height + Theme.spacingL * 2
+                        radius: Theme.cornerRadius
+                        color: Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency)
+                        border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.08)
+                        border.width: 1
+
+                        Column {
+                            id: sysPromptContent
+                            width: parent.width - Theme.spacingL * 2
+                            anchors.centerIn: parent
+                            spacing: Theme.spacingM
+
+                            // Header
+                            Row {
+                                width: parent.width
+                                spacing: Theme.spacingM
+
+                                DankIcon {
+                                    name: "smart_toy"
+                                    size: Theme.iconSize
+                                    color: Theme.primary
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Column {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: Theme.spacingXS
+                                    width: parent.width - parent.spacing - Theme.iconSize
+
+                                    StyledText {
+                                        text: I18n.tr("System Prompt")
+                                        font.pixelSize: Theme.fontSizeLarge
+                                        font.weight: Font.Medium
+                                        color: Theme.surfaceText
+                                    }
+
+                                    StyledText {
+                                        text: I18n.tr("Optional. Sets the assistant's role and behavior for this provider. Leave empty to disable.")
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: Theme.surfaceVariantText
+                                        wrapMode: Text.WordWrap
+                                        width: parent.width
+                                    }
+                                }
+                            }
+
+                            // Multiline editor (TextEdit is QtQuick-native, not QtQuick.Controls)
+                            Rectangle {
+                                width: parent.width
+                                height: 120
+                                radius: Theme.cornerRadius
+                                color: Theme.surfaceContainerHigh
+                                border.color: sysPromptEdit.activeFocus ? Theme.primary : Theme.outlineMedium
+                                border.width: sysPromptEdit.activeFocus ? 2 : 1
+
+                                TextEdit {
+                                    id: sysPromptEdit
+                                    anchors.fill: parent
+                                    anchors.margins: Theme.spacingS
+                                    text: root.systemPrompt
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    color: Theme.surfaceText
+                                    selectionColor: Theme.primaryContainer
+                                    selectedTextColor: Theme.primary
+                                    wrapMode: TextEdit.Wrap
+                                    selectByMouse: true
+                                    clip: true
+                                    verticalAlignment: TextEdit.AlignTop
+
+                                    // Save on focus loss (mirrors DankTextField's onEditingFinished pattern).
+                                    onActiveFocusChanged: if (!activeFocus) saveActiveField("systemPrompt", text)
+
+                                    StyledText {
+                                        text: I18n.tr("e.g. You are a concise assistant. Reply in Chinese.")
+                                        color: Theme.outlineButton
+                                        font.pixelSize: Theme.fontSizeMedium
+                                        visible: sysPromptEdit.text.length === 0 && !sysPromptEdit.activeFocus
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                // Keep the editor in sync when the active provider changes.
+                                Connections {
+                                    target: root
+                                    function onSystemPromptChanged() {
+                                        if (!sysPromptEdit.activeFocus)
+                                            sysPromptEdit.text = root.systemPrompt
+                                    }
+                                }
+
+                                Behavior on border.color {
+                                    ColorAnimation {
+                                        duration: Theme.shortDuration
+                                        easing.type: Theme.standardEasing
+                                    }
+                                }
+                                Behavior on border.width {
+                                    NumberAnimation {
+                                        duration: Theme.shortDuration
+                                        easing.type: Theme.standardEasing
+                                    }
+                                }
                             }
                         }
                     }

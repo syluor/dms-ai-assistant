@@ -51,6 +51,7 @@ Item {
     property bool inceptionReasoningSummary: true
     property bool inceptionReasoningSummaryWait: false
     property bool geminiWebSearch: false
+    property string systemPrompt: ""
     property var availableModels: []
     property bool modelsLoading: false
     property string modelsError: ""
@@ -148,7 +149,8 @@ Item {
             apiKeyEnvVar: String(p.apiKeyEnvVar || "").trim(),
             temperature: (typeof p.temperature === "number") ? p.temperature : defaults.temperature,
             maxTokens: (typeof p.maxTokens === "number") ? p.maxTokens : defaults.maxTokens,
-            timeout: (typeof p.timeout === "number") ? p.timeout : defaults.timeout
+            timeout: (typeof p.timeout === "number") ? p.timeout : defaults.timeout,
+            systemPrompt: String(p.systemPrompt || "").trim()
         };
         if (id === "inception") {
             const efforts = ["instant", "low", "medium", "high"];
@@ -196,6 +198,7 @@ Item {
         PluginService.savePluginData(pluginId, "maxTokens", activeProfile.maxTokens)
         PluginService.savePluginData(pluginId, "timeout", activeProfile.timeout)
         PluginService.savePluginData(pluginId, "geminiWebSearch", !!activeProfile.geminiWebSearch)
+        PluginService.savePluginData(pluginId, "systemPrompt", activeProfile.systemPrompt)
     }
 
     function loadSettings() {
@@ -215,7 +218,8 @@ Item {
                 geminiWebSearch: PluginService.loadPluginData(pluginId, "geminiWebSearch", false),
                 apiKey: String(PluginService.loadPluginData(pluginId, "apiKey", "")).trim(),
                 saveApiKey: PluginService.loadPluginData(pluginId, "saveApiKey", false),
-                apiKeyEnvVar: String(PluginService.loadPluginData(pluginId, "apiKeyEnvVar", "")).trim()
+                apiKeyEnvVar: String(PluginService.loadPluginData(pluginId, "apiKeyEnvVar", "")).trim(),
+                systemPrompt: String(PluginService.loadPluginData(pluginId, "systemPrompt", "")).trim()
             }
             nextProviders[providerId] = normalizedProfile(providerId, legacyProfile)
             PluginService.savePluginData(pluginId, "providers", nextProviders)
@@ -234,6 +238,7 @@ Item {
         apiKey = active.apiKey
         saveApiKey = active.saveApiKey
         apiKeyEnvVar = active.apiKeyEnvVar
+        systemPrompt = active.systemPrompt
         if (provider === "inception") {
             inceptionReasoningEffort = active.inceptionReasoningEffort || "medium";
             inceptionReasoningSummary = active.inceptionReasoningSummary !== false;
@@ -634,7 +639,8 @@ Item {
             max_tokens: maxTokens,
             messages: msgs,
             stream: true,
-            timeout: timeout
+            timeout: timeout,
+            systemPrompt: systemPrompt
         };
         if (provider === "inception") {
             payload.inceptionReasoningEffort = inceptionReasoningEffort;

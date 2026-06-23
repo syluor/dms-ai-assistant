@@ -11,6 +11,7 @@ An integrated AI chat assistant plugin for DankMaterialShell with support for mu
 - **Markdown Rendering**: Full markdown support with syntax highlighting for code blocks
 - **Persistent Chat History**: Conversations are saved and restored across sessions
 - **Flexible Configuration**: Per-provider settings for model, temperature, max tokens, and more
+- **Custom System Prompts**: Set a per-provider system prompt to steer the assistant's role and behavior
 - **API Key Management**: Store API keys securely or use environment variables
 - **Session-based Keys**: Option to use in-memory API keys that don't persist to disk
 - **Monospace Font Option**: Toggle monospace rendering for technical discussions
@@ -148,6 +149,13 @@ API Key: Optional (leave empty for local APIs)
 - **Max Tokens** (128 - 32768): Maximum response length
   - Adjust based on your needs and model limits
   - Higher values = longer responses but more API cost
+
+### System Prompt
+
+Each provider can have its own optional **system prompt** that steers the assistant's role, tone, and behavior (e.g. "You are a concise translator. Reply in Chinese."). Configure it in the settings panel — it is stored per-provider alongside the model/temperature settings, so switching providers loads that provider's prompt.
+
+- Leave it empty to disable (no system message is sent).
+- The prompt is sent using each provider's native format: a `system` role message (OpenAI/Inception/Ollama/Custom), the top-level `system` field (Anthropic), or `systemInstruction` (Gemini).
 
 ## Usage
 
@@ -308,5 +316,5 @@ For issues, questions, or feature requests:
 - [ ] Multi-turn conversation context management
 - [ ] Conversation branching/forking
 - [ ] Export conversations to markdown
-- [ ] Custom system prompts
+- [x] Custom system prompts
 - [ ] Conversation templates/presets

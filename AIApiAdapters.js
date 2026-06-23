@@ -12,6 +12,15 @@ function normalizeBaseUrl(url) {
     return u.endsWith("/") ? u.slice(0, -1) : u;
 }
 
+// Prepends a {role:"system"} message when a systemPrompt is configured.
+// Anthropic and Gemini use dedicated request fields instead, so they do not call this.
+function withSystemMessage(messages, systemPrompt) {
+    const sp = String(systemPrompt || "").trim();
+    if (!sp)
+        return messages;
+    return [{ role: "system", content: sp }].concat(messages || []);
+}
+
 function openaiChatCompletionsUrl(baseUrl) {
     // Support the common OpenAI-style host base (https://api.openai.com -> /v1/chat/completions)
     // and versioned bases used by local servers or other providers (..../v1 or ..../v4 -> /chat/completions).
@@ -69,7 +78,7 @@ function openaiRequest(payload, apiKey) {
     const headers = ["-H", "Content-Type: application/json", "-H", "Authorization: Bearer " + apiKey];
     const body = {
         model: payload.model,
-        messages: payload.messages,
+        messages: withSystemMessage(payload.messages, payload.systemPrompt),
         max_tokens: payload.max_tokens || 1024,
         temperature: payload.temperature || 0.7,
         stream: true
@@ -90,7 +99,7 @@ function inceptionRequest(payload, apiKey) {
         t = 1.0;
     const body = {
         model: payload.model,
-        messages: payload.messages,
+        messages: withSystemMessage(payload.messages, payload.systemPrompt),
         max_tokens: mt,
         temperature: t,
         stream: true
@@ -119,6 +128,10 @@ function anthropicRequest(payload, apiKey) {
         temperature: payload.temperature || 0.7,
         stream: true
     };
+    // Anthropic exposes the system prompt as a top-level field, not inside messages.
+    const sys = String(payload.systemPrompt || "").trim();
+    if (sys)
+        body.system = sys;
     return { url, headers, body: JSON.stringify(body) };
 }
 
@@ -140,6 +153,10 @@ function geminiRequest(payload, apiKey) {
     };
     if (payload.geminiWebSearch === true)
         body.tools = [{ google_search: {} }];
+    // Gemini exposes the system prompt via systemInstruction.
+    const sys = String(payload.systemPrompt || "").trim();
+    if (sys)
+        body.systemInstruction = { parts: [{ text: sys }] };
     return { url, headers, body: JSON.stringify(body) };
 }
 
@@ -152,7 +169,7 @@ function ollamaRequest(payload) {
     const url = normalizeBaseUrl(payload.baseUrl || "http://localhost:11434") + "/api/chat";
     const body = {
         model: payload.model,
-        messages: payload.messages,
+        messages: withSystemMessage(payload.messages, payload.systemPrompt),
         stream: true,
         options: {
             temperature: payload.temperature || 0.7,

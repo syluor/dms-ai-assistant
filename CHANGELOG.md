@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Inception** / Mercury 2: [API parameters](https://docs.inceptionlabs.ai/get-started/api-parameters) in settings (`reasoning_effort`, `reasoning_summary`, `reasoning_summary_wait`). Temperature clamped 0.5–1.0 per docs
 - **Ollama provider** with default local endpoint, installed-model discovery, and a model switcher in the main chat header
 - **Gemini Google Search grounding** toggle in settings for web-grounded responses
+- **Custom system prompt** per provider in settings, sent via each provider's native format (`system` role message, Anthropic `system` field, or Gemini `systemInstruction`); empty prompts are omitted
 
 ### Fixed
 
